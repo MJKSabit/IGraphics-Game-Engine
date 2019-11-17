@@ -50,7 +50,7 @@ Track gameTrack = Track({Point(0, 10), Point(100, 10)});
 class Wheel{
     double radius = 10.0;
 public:
-    Motion movement = Motion(Vector(50.0, HEIGHT), 10);
+    Motion movement = Motion(Vector(50.0, HEIGHT/4), 10);
     Vector g = Vector(0, -9.80665);
     // Vector Weight = g.multiply(movement.getMass());
     Vector AdditionalForce = Vector(10, 0);
@@ -81,102 +81,11 @@ public:
 
         if (lo==hi) /// Check a single Line
         {
-            Vector vct_line = Vector(gameTrack.getLine(lo));
-            Vector vct_ray = Vector(gameTrack.getInitialPoint(lo), movement.getCenter());
-
-            double d = abs(vct_ray.multiplyCross(vct_line))/vct_line.getValue();
-
-            if(d-radius<=1.0) /// Collide
-            {
-                movement.setOnSurface(1, gameTrack.getLine(lo).getSlopeAngle());
-                if(d<radius)
-                {
-                    double x, y, diff, ang;
-
-                    diff = radius-d;
-                    ang = gameTrack.getLine(lo).getSlopeAngle() + PI/2;
-                    x = movement.getMovementX() + diff*cos(ang);
-                    y = movement.getMovementY() + diff*sin(ang);
-
-                    movement.setCenter(Point(x, y));
-                }
-            }
-            else
-            {
-                movement.setOnSurface(0);
-            }
+            movement.collusionLine(gameTrack.getLine(lo), radius);
         }
         else /// between an intersection
         {
-            double alpha = gameTrack.getLine(lo).getSlopeAngle();
-            double beta = gameTrack.getLine(hi).getSlopeAngle();
-
-            Point intersection = gameTrack.getLine(lo).getEndPoint();
-
-            LineSegment ray(intersection, movement.getCenter());
-
-            double theta = ray.getSlopeAngle();
-            if(theta<0) theta += 2*PI;
-
-            printf("A %.1f B %.1f T %.1f\n", alpha*180/PI, beta*180/PI, theta*180/PI);
-
-            double cmp = (alpha+beta+PI)/2, d, angle;
-            int index;
-
-            if (beta>=alpha) /// \_/
-            {
-                if(abs(cmp-alpha)<=1e-4)
-                {
-                    if(movement.getXVelocity()>0) index = hi;
-                    else index = lo;
-                }
-                else if(theta>cmp)
-                {
-                    index = lo;
-                }
-                else{
-                    index = hi;
-                }
-            }
-            else
-            {
-                if(theta>alpha+PI/2) index = lo;
-                else if(theta<beta+PI/2) index = hi;
-                else{
-                    if(cmp<=theta) angle = movement.getXVelocity() > 0 ? gameTrack.getLine(lo).getSlopeAngle() : theta-PI/2;
-                    else movement.getXVelocity() < 0 ? gameTrack.getLine(hi).getSlopeAngle() : theta-PI/2;
-
-                    d = ray.getLength();
-                }
-            }
-
-            if(index!=-1)
-            {
-                angle = gameTrack.getLine(index).getSlopeAngle();
-
-                Vector vct_line = Vector(gameTrack.getLine(index)), vct_ray = Vector(ray);
-                d = abs(vct_line.multiplyCross(vct_ray))/vct_line.getValue();
-            }
-
-            if(d-radius<=1.0)
-            {
-                movement.setOnSurface(1, angle);
-                if(d<radius)
-                {
-                    double x, y, diff, ang;
-
-                    diff = radius-d;
-                    ang = angle + PI/2;
-                    x = movement.getMovementX() + diff*cos(ang);
-                    y = movement.getMovementY() + diff*sin(ang);
-
-                    movement.setCenter(Point(x, y));
-                }
-            }
-            else
-            {
-                movement.setOnSurface(0);
-            }
+            movement.collusion2Line(gameTrack.getLine(lo), gameTrack.getLine(hi), radius);
         }
     }
 
@@ -188,11 +97,15 @@ public:
 
 Wheel myWheel;
 
-
+char converted_1[20], converted_2[20];
 
 void iDraw() {
 	iClear();
 	gameTrack.draw();
+	sprintf(converted_1, "Engine: %.1f", myWheel.movement.getEngineForce());
+	sprintf(converted_2, "Friction: %.1f", myWheel.movement.getFrictionForce());
+    iText(100, 100, converted_1);
+    iText(100, 80, converted_2);
     myWheel.draw();
 }
 

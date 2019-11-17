@@ -211,13 +211,14 @@ public:
 
 
 class Motion{
-    Vector g = Vector(0, -9.80665*10);
+    Vector g = Vector(0, -9.80665);
     const double Mu_k = 0.1;
 
     double mass, movementAngle, surfaceAngle;
     int onSurface = 0;
 
     Vector netForce, accelaration,velocity, displacement;
+    Vector frictionForce, reactionForce;
 
     Vector Weight;
 
@@ -229,6 +230,16 @@ public:
         velocity = Vector(0.0, 0.0);
         displacement = prevPosition;
         Weight = g.multiply(mass);
+    }
+
+    double getEngineForce()
+    {
+        return netForce.getX();
+    }
+
+    double getFrictionForce()
+    {
+        return frictionForce.getValue();
     }
 
     double getSurfaceAngle()
@@ -277,7 +288,9 @@ public:
     void activate()
     {
         Vector currentForce = Weight;
-        Vector frictionForce, reactionForce;
+
+        frictionForce = Vector();
+
 
         if(onSurface)
         {
@@ -286,7 +299,7 @@ public:
             //currentForce = currentForce.add(netForce);
 
             currentForce = unit.multiply(unit.multiplyDot(currentForce));
-            reactionForce = netForce.substruct(currentForce); /// For friction
+            reactionForce = Weight.substruct(currentForce); /// For friction
 
             int velocity_sign = velocity.multiplyDot(unit)>0 ? 1 : velocity.multiplyDot(unit)==0 ? 0 : -1;
             int friction_sign = -velocity_sign;
@@ -311,6 +324,101 @@ public:
         //printf("F: %.1f %.1f V: %.1f %.1f\n", netForce.getX(), netForce.getY(), velocity.getX(), velocity.getY());
         camX = getMovementX()-WIDTH/2;
 
+    }
+
+    void collusionLine(LineSegment line, double radius)
+    {
+        Vector vct_line = Vector(line);
+        Vector vct_ray = Vector(line.getInitialPoint(), getCenter());
+
+        double d = abs(vct_ray.multiplyCross(vct_line))/vct_line.getValue();
+
+        if(d-radius<=1.0) /// Collide
+        {
+            this->setOnSurface(1, line.getSlopeAngle());
+            if(d<radius)
+            {
+                double x, y, diff, ang;
+
+                diff = radius-d;
+                ang = line.getSlopeAngle() + PI/2;
+                x = this->getMovementX() + diff*cos(ang);
+                y = this->getMovementY() + diff*sin(ang);
+
+                this->setCenter(Point(x, y));
+            }
+        }
+        else
+        {
+            this->setOnSurface(0);
+        }
+    }
+
+    void collusion2Line(LineSegment first, LineSegment second, double radius)
+    {
+        double alpha = first.getSlopeAngle();
+        double beta = second.getSlopeAngle();
+
+        Point intersection = first.getEndPoint();
+
+        LineSegment ray(intersection, this->getCenter());
+
+        double theta = ray.getSlopeAngle();
+        if(theta<0) theta += 2*PI;
+
+        //printf("A %.1f B %.1f T %.1f\n", alpha*180/PI, beta*180/PI, theta*180/PI);
+
+        double cmp = (alpha+beta+PI)/2, d, angle;
+        LineSegment line = LineSegment(Point(-100, -100), Point(-10, -10));
+
+        if (beta>=alpha) /// \_/
+        {
+            if(abs(cmp-alpha)<=1e-6)
+            {
+                if(this->getXVelocity()>0) line = second;
+                else line = first;
+            }
+            else if(theta>cmp)
+            {
+                line = first;
+            }
+            else{
+                line = second;
+            }
+        }
+        else
+        {
+            if(theta>alpha+PI/2) line = first;
+            else if(theta<beta+PI/2) line = second;
+            else{
+                if(cmp<=theta) angle = this->getXVelocity() > 0 ? first.getSlopeAngle() : theta-PI/2;
+                else angle =  this->getXVelocity() < 0 ? second.getSlopeAngle() : theta-PI/2;
+
+                d = ray.getLength();
+                if(d-radius<=1.0)
+                {
+                    this->setOnSurface(1, angle);
+                    if(d<radius) moveCenter(radius-d, angle+PI/2);
+                }
+                else
+                {
+                    this->setOnSurface(0);
+                }
+                return;
+            }
+        }
+
+        this->collusionLine(line, radius);
+    }
+
+    double moveCenter(double diff, double ang)
+    {
+        double x, y;
+
+        x = this->getMovementX() + diff*cos(ang);
+        y = this->getMovementY() + diff*sin(ang);
+
+        this->setCenter(Point(x, y));
     }
 
     double getMovementX() const
