@@ -102,8 +102,8 @@ char converted_1[20], converted_2[20];
 void iDraw() {
 	iClear();
 	gameTrack.draw();
-	sprintf(converted_1, "Engine: %.1f", myWheel.movement.getEngineForce());
-	sprintf(converted_2, "Friction: %.1f", myWheel.movement.getFrictionForce());
+	sprintf(converted_1, "Engine: %.1f", myWheel.movement.getEngineForce()/FORCE_FACTOR);
+	sprintf(converted_2, "Friction: %.1f", myWheel.movement.getFrictionForce()/FORCE_FACTOR);
     iText(100, 100, converted_1);
     iText(100, 80, converted_2);
     myWheel.draw();

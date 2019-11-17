@@ -1,7 +1,9 @@
 #include <bits/stdc++.h>
 
-double PI = acos(-1.0);
-double WIDTH = 800, HEIGHT = 500;
+const double PI = acos(-1.0);
+const double WIDTH = 800, HEIGHT = 500;
+
+const double FORCE_FACTOR = 10;
 
 const int FPS = 60;
 const double SecondsPerFrame = 1/double(FPS);
@@ -229,7 +231,7 @@ public:
         accelaration = Vector(0.0, 0.0);
         velocity = Vector(0.0, 0.0);
         displacement = prevPosition;
-        Weight = g.multiply(mass);
+        Weight = g.multiply(mass*FORCE_FACTOR);
     }
 
     double getEngineForce()
@@ -272,12 +274,12 @@ public:
     {
         netForce = Vector(0, 0);
 
-        for(int i=0; i<forces.size(); i++) netForce = netForce.add(forces[i]);
+        for(int i=0; i<forces.size(); i++) netForce = netForce.add(forces[i].multiply(FORCE_FACTOR));
     }
 
     void addEngineForce(double magnitude)
     {
-        netForce = netForce.add(Vector(magnitude, 0));
+        netForce = netForce.add(Vector(magnitude*FORCE_FACTOR, 0));
     }
 
     double getXVelocity()
