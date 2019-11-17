@@ -212,7 +212,7 @@ public:
 
 class Motion{
     Vector g = Vector(0, -9.80665*10);
-    const double Mu_k = 0.5;
+    const double Mu_k = 0.1;
 
     double mass, movementAngle, surfaceAngle;
     int onSurface = 0;
@@ -277,7 +277,7 @@ public:
     void activate()
     {
         Vector currentForce = Weight;
-        Vector frictionForce = 0;
+        Vector frictionForce, reactionForce;
 
         if(onSurface)
         {
@@ -286,15 +286,20 @@ public:
             //currentForce = currentForce.add(netForce);
 
             currentForce = unit.multiply(unit.multiplyDot(currentForce));
-            //frictionForce = netForce.substruct(currentForce).multiply(Mu_k); /// For friction
+            reactionForce = netForce.substruct(currentForce); /// For friction
+
+            int velocity_sign = velocity.multiplyDot(unit)>0 ? 1 : velocity.multiplyDot(unit)==0 ? 0 : -1;
+            int friction_sign = -velocity_sign;
+
+            frictionForce = unit.multiply(reactionForce.getValue()*friction_sign*Mu_k);
 
             currentForce = currentForce.add(unit.multiply(netForce.getX()));
 
             velocity = unit.multiply(velocity.multiplyDot(unit));
         }
 
-        //printf("%f %f\n", currentForce.getX(), currentForce.getY());
-        //currentForce = currentForce.substruct(frictionForce);
+        printf("FRICTION %f %f\n", frictionForce.getX(), frictionForce.getY());
+        currentForce = currentForce.add(frictionForce); /// Not (-) as already added Direction
 
         accelaration = currentForce.multiply(1/mass);
         velocity = velocity.add(accelaration.multiply(SecondsPerFrame));
