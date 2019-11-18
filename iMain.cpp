@@ -59,7 +59,7 @@ public:
     {
         movement.setVelocity(Vector(120, 0));
 
-        movement.setEngineForces({});
+        movement.setEngineForces(0);
 
         movement.setOnSurface(0, -PI/4);
     }
@@ -129,13 +129,13 @@ void iKeyboard(unsigned char key) {
         myWheel.movement.addEngineForce(-myWheel.AdditionalForce.getValue());
     }
     if(key=='s'){
-        printf("\n");
+        myWheel.movement.addForces(Vector(0, -10));
     }
     if(key=='d'){
         myWheel.movement.addEngineForce(myWheel.AdditionalForce.getValue());
     }
     if(key=='w'){
-
+        myWheel.movement.addForces(Vector(0, 10));
     }
     if(key=='p')
     {
@@ -174,7 +174,7 @@ void iSpecialKeyboard(unsigned char key) {
 void varInitialize()
 {
     srand(clock()%1000);
-    for(int i=2; i<100; i++)
+    for(int i=2; i<500; i++)
         gameTrack.insert(Point(gameTrack.WIDTH_PER_BLOCK*i, rand()%int(HEIGHT/2-20)+10));
 }
 
@@ -182,7 +182,7 @@ void Frame()
 {
     myWheel.movement.activate();
     myWheel.setCollusionStatus();
-    printf("POSITION: %f %f\n", myWheel.movement.getMovementX(), myWheel.movement.getMovementY());
+    //printf("POSITION: %f %f\n", myWheel.movement.getMovementX(), myWheel.movement.getMovementY());
     //camX = myWheel.movement.getMovementX()-WIDTH/2;
 }
 

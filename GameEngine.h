@@ -220,7 +220,8 @@ class Motion{
     int onSurface = 0;
 
     Vector netForce, accelaration,velocity, displacement;
-    Vector frictionForce, reactionForce;
+    Vector frictionForce, reactionForce, surfaceForce;
+    double engineForce = 0;
 
     Vector Weight;
 
@@ -236,7 +237,7 @@ public:
 
     double getEngineForce()
     {
-        return netForce.getX();
+        return engineForce;
     }
 
     double getFrictionForce()
@@ -270,16 +271,26 @@ public:
         return mass;
     }
 
-    void setEngineForces(std::vector <Vector> forces)
+    void setForces(std::vector <Vector> forces = {})
     {
         netForce = Vector(0, 0);
 
         for(int i=0; i<forces.size(); i++) netForce = netForce.add(forces[i].multiply(FORCE_FACTOR));
     }
 
+    void addForces (Vector vct)
+    {
+        netForce = netForce.add(vct.multiply(FORCE_FACTOR));
+    }
+
+    void setEngineForces(double Magnitude)
+    {
+        engineForce = Magnitude*FORCE_FACTOR;
+    }
+
     void addEngineForce(double magnitude)
     {
-        netForce = netForce.add(Vector(magnitude*FORCE_FACTOR, 0));
+        engineForce += magnitude*FORCE_FACTOR;
     }
 
     double getXVelocity()
@@ -289,32 +300,45 @@ public:
 
     void activate()
     {
-        Vector currentForce = Weight;
+        Vector currentForce = Weight.add(netForce);
 
         frictionForce = Vector();
+
+        printf("Net Force %.2f %.2f\n", netForce.getX(), netForce.getY());
 
 
         if(onSurface)
         {
-            Vector unit =  Vector(surfaceAngle);
+            Vector unitVectorToSurface =  Vector(surfaceAngle); /// Unit Vector through Surface
+            Vector unitVectorPerpendicular = Vector(surfaceAngle+PI/2); /// Reaction Force is Upward
 
-            //currentForce = currentForce.add(netForce);
+            surfaceForce = unitVectorToSurface.multiply(unitVectorToSurface.multiplyDot(currentForce));
+            reactionForce = unitVectorPerpendicular.multiply(unitVectorPerpendicular.multiplyDot(currentForce)); /// For friction
 
-            currentForce = unit.multiply(unit.multiplyDot(currentForce));
-            reactionForce = Weight.substruct(currentForce); /// For friction
+            if(unitVectorPerpendicular.multiplyDot(currentForce)<0) /// Reaction Force Downward
+            {
+                int velocity_sign = velocity.multiplyDot(unitVectorToSurface)>0 ? 1 : velocity.multiplyDot(unitVectorToSurface)==0 ? 0 : -1;
+                int friction_sign = -velocity_sign;
 
-            int velocity_sign = velocity.multiplyDot(unit)>0 ? 1 : velocity.multiplyDot(unit)==0 ? 0 : -1;
-            int friction_sign = -velocity_sign;
+                velocity = unitVectorToSurface.multiply(velocity.multiplyDot(unitVectorToSurface));
 
-            frictionForce = unit.multiply(reactionForce.getValue()*friction_sign*Mu_k);
+                frictionForce = unitVectorToSurface.multiply(reactionForce.getValue()*friction_sign*Mu_k);
 
-            currentForce = currentForce.add(unit.multiply(netForce.getX()));
+                surfaceForce = surfaceForce.add(frictionForce);
+                surfaceForce = surfaceForce.add(unitVectorToSurface.multiply(engineForce));
 
-            velocity = unit.multiply(velocity.multiplyDot(unit));
+                currentForce = surfaceForce;
+                reactionForce = reactionForce.multiply(-1);
+            }
+            else
+            {
+                if(unitVectorPerpendicular.multiplyDot(velocity)<0) /// Velocity is Downward
+                {
+                    velocity = unitVectorToSurface.multiply(velocity.multiplyDot(unitVectorToSurface));
+                }
+                currentForce = surfaceForce.add(reactionForce);
+            }
         }
-
-        printf("FRICTION %f %f\n", frictionForce.getX(), frictionForce.getY());
-        currentForce = currentForce.add(frictionForce); /// Not (-) as already added Direction
 
         accelaration = currentForce.multiply(1/mass);
         velocity = velocity.add(accelaration.multiply(SecondsPerFrame));
