@@ -226,6 +226,8 @@ class Motion{
     Vector Weight;
 
 public:
+    Vector cf;
+
     Motion(Vector prevPosition, double m)
     {
         mass = m;
@@ -304,7 +306,7 @@ public:
 
         frictionForce = Vector();
 
-        printf("Net Force %.2f %.2f\n", netForce.getX(), netForce.getY());
+        // printf("Net Force %.2f %.2f\n", netForce.getX(), netForce.getY());
 
 
         if(onSurface)
@@ -346,9 +348,8 @@ public:
 
 
         displacement = displacement.add(velocity.multiply(SecondsPerFrame));
-
+        cf = currentForce;
         //printf("F: %.1f %.1f V: %.1f %.1f\n", netForce.getX(), netForce.getY(), velocity.getX(), velocity.getY());
-        camX = getMovementX()-WIDTH/2;
 
     }
 

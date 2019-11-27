@@ -2,6 +2,8 @@
 # include "iGraphics.h"
 #include "GameEngine.h"
 
+Vector AdditionalForce = Vector(10, 0);
+
 class Track{
     std::vector <Point> trackPoint;
     std::vector <LineSegment> trackLine;
@@ -51,16 +53,13 @@ class Wheel{
     double radius = 10.0;
 public:
     Motion movement = Motion(Vector(50.0, HEIGHT/4), 10);
-    Vector g = Vector(0, -9.80665);
-    // Vector Weight = g.multiply(movement.getMass());
+
     Vector AdditionalForce = Vector(10, 0);
 
     Wheel()
     {
         movement.setVelocity(Vector(120, 0));
-
         movement.setEngineForces(0);
-
         movement.setOnSurface(0, -PI/4);
     }
 
@@ -95,18 +94,69 @@ public:
     }
 };
 
-Wheel myWheel;
+
+
+class Bike
+{
+    double bikeAngle = 0; /// With X-Axis
+    const double wheelDistance = 25;
+
+public:
+    Wheel backWheel, frontWheel;
+    LineSegment connector = LineSegment(backWheel.movement.getCenter(), frontWheel.movement.getCenter());
+
+
+    void fixFrontWheel()
+    {
+        Point newPoint;
+
+        connector = LineSegment(backWheel.movement.getCenter(), frontWheel.movement.getCenter());
+        bikeAngle = connector.getSlopeAngle();
+
+        newPoint.setRTheta(wheelDistance, bikeAngle, backWheel.movement.getCenter());
+        frontWheel.movement.setCenter(newPoint);
+
+        connector = LineSegment(backWheel.movement.getCenter(), frontWheel.movement.getCenter());
+    }
+
+    void fixCameraPosition()
+    {
+        camX = backWheel.movement.getMovementX()-WIDTH/2;
+    }
+
+    void startMovement()
+    {
+        backWheel.movement.activate();
+        backWheel.setCollusionStatus();
+
+        frontWheel.movement.activate();
+        frontWheel.setCollusionStatus();
+    }
+
+    void draw()
+    {
+        backWheel.draw();
+        frontWheel.draw();
+        connector.draw(camX);
+    }
+
+    void log()
+    {
+        printf("%.2fi + %.2fj | %.2f %.2f\n", frontWheel.movement.cf.getX()/FORCE_FACTOR, backWheel.movement.cf.getY()/FORCE_FACTOR, frontWheel.movement.getMovementX(), frontWheel.movement.getMovementY());
+    }
+
+} myBike;
 
 char converted_1[20], converted_2[20];
 
 void iDraw() {
 	iClear();
 	gameTrack.draw();
-	sprintf(converted_1, "Engine: %.1f", myWheel.movement.getEngineForce()/FORCE_FACTOR);
-	sprintf(converted_2, "Friction: %.1f", myWheel.movement.getFrictionForce()/FORCE_FACTOR);
+	sprintf(converted_1, "Engine: %.1f", myBike.backWheel.movement.getEngineForce()/FORCE_FACTOR);
+	sprintf(converted_2, "Friction: %.1f", myBike.backWheel.movement.getFrictionForce()/FORCE_FACTOR);
     iText(100, 100, converted_1);
     iText(100, 80, converted_2);
-    myWheel.draw();
+    myBike.draw();
 }
 
 void iMouseMove(int mx, int my) {
@@ -126,16 +176,16 @@ void iMouse(int button, int state, int mx, int my) {
 	*/
 void iKeyboard(unsigned char key) {
     if(key=='a'){
-        myWheel.movement.addEngineForce(-myWheel.AdditionalForce.getValue());
+        myBike.backWheel.movement.addEngineForce(-AdditionalForce.getValue());
     }
     if(key=='s'){
-        myWheel.movement.addForces(Vector(0, -10));
+        myBike.backWheel.movement.addForces(Vector(0, -10));
     }
     if(key=='d'){
-        myWheel.movement.addEngineForce(myWheel.AdditionalForce.getValue());
+        myBike.backWheel.movement.addEngineForce(AdditionalForce.getValue());
     }
     if(key=='w'){
-        myWheel.movement.addForces(Vector(0, 10));
+        myBike.backWheel.movement.addForces(Vector(0, 10));
     }
     if(key=='p')
     {
@@ -174,14 +224,23 @@ void iSpecialKeyboard(unsigned char key) {
 void varInitialize()
 {
     srand(clock()%1000);
+
+    myBike.fixFrontWheel();
+    myBike.fixCameraPosition();
+
     for(int i=2; i<500; i++)
         gameTrack.insert(Point(gameTrack.WIDTH_PER_BLOCK*i, rand()%int(HEIGHT/2-20)+10));
 }
 
 void Frame()
 {
-    myWheel.movement.activate();
-    myWheel.setCollusionStatus();
+    myBike.fixFrontWheel();
+    myBike.startMovement();
+    myBike.fixCameraPosition();
+    myBike.fixFrontWheel();
+
+    myBike.log();
+
     //printf("POSITION: %f %f\n", myWheel.movement.getMovementX(), myWheel.movement.getMovementY());
     //camX = myWheel.movement.getMovementX()-WIDTH/2;
 }

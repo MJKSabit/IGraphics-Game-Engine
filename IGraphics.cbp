@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="Ball in The Box" />
+		<Option title="Gravity" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
@@ -56,6 +56,7 @@
 		<ExtraCommands>
 			<Add after="xcopy /y OpenGL\DLL\glut32.dll $TARGET_OUTPUT_DIR" />
 		</ExtraCommands>
+		<Unit filename="GameEngine.h" />
 		<Unit filename="iMain.cpp" />
 		<Extensions>
 			<code_completion />
